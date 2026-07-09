@@ -235,14 +235,10 @@ export default function ClientPortalPage() {
         setUser(data.session.user);
         await fetchData(data.session.user.id);
         await fetchDynamicPlans();
-        // Load phone number for M-Pesa STK push
-        const { data: userProfile } = await supabase
-          .from('users')
-          .select('phone_number')
-          .eq('id', data.session.user.id)
-          .maybeSingle();
-        if (userProfile?.phone_number) {
-          setMpesaPhone(userProfile.phone_number);
+        // Pre-fill phone from auth session if available (avoids RLS issues on users table)
+        const sessionPhone = data.session.user.phone;
+        if (sessionPhone) {
+          setMpesaPhone(sessionPhone);
         }
       }
     };
