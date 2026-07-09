@@ -41,14 +41,16 @@ export async function POST(req: NextRequest) {
 
     console.log(`[USSD] ${cleanedPhone} | Input: "${text}" | Response: ${response.type}`);
 
-    // Process database mutations when user reaches the end state
+    // Process database mutations when user reaches the end state.
+    // NOTE: parts[0] is the language selection ('1' English / '2' Kiswahili),
+    // so every menu selection is shifted one position to the right.
     if (response.type === 'END') {
       const parts = text.split('*');
 
-      // 1. Confirm Purchase: 1*<categoryIndex>*<planIndex>*1
-      if (parts.length === 4 && parts[0] === '1' && parts[3] === '1') {
-        const categoryIndex = parts[1];
-        const planIndex = parts[2];
+      // 1. Confirm Purchase: <lang>*1*<categoryIndex>*<planIndex>*1
+      if (parts.length === 5 && parts[1] === '1' && parts[4] === '1') {
+        const categoryIndex = parts[2];
+        const planIndex = parts[3];
         
         const planMap: Record<string, Record<string, { type: string; name: string; premium: number; coverage: number }>> = {
           '1': {
@@ -161,10 +163,10 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      // 2. File Claim: 2*<policyId_or_phone_or_input>*<description>
-      if (parts.length === 3 && parts[0] === '2') {
-        const policyInput = parts[1];
-        const description = parts[2];
+      // 2. File Claim: <lang>*2*<policyId_or_phone>*<description>
+      if (parts.length === 4 && parts[1] === '2') {
+        const policyInput = parts[2];
+        const description = parts[3];
 
         let userId = null;
         let policyId = null;

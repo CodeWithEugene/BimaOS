@@ -256,10 +256,10 @@ export default function UssdSimulatorPage() {
                   Navigation Guide
                 </h4>
                 <ul className="text-xs text-zinc-500 dark:text-zinc-400 space-y-1">
-                  <li>• Choose <span className="font-bold text-zinc-700 dark:text-zinc-300">1</span> to purchase daily cover policies.</li>
-                  <li>• Choose <span className="font-bold text-zinc-700 dark:text-zinc-300">2</span> to log a claim (generates upload SMS).</li>
-                  <li>• Choose <span className="font-bold text-zinc-700 dark:text-zinc-300">3</span> to view subscriber active policies.</li>
-                  <li>• Choose <span className="font-bold text-zinc-700 dark:text-zinc-300">4</span> to view the education module.</li>
+                  <li>• First choose language: <span className="font-bold text-zinc-700 dark:text-zinc-300">1</span> English or <span className="font-bold text-zinc-700 dark:text-zinc-300">2</span> Kiswahili.</li>
+                  <li>• Then <span className="font-bold text-zinc-700 dark:text-zinc-300">1</span> to buy cover, <span className="font-bold text-zinc-700 dark:text-zinc-300">2</span> to file a claim.</li>
+                  <li>• <span className="font-bold text-zinc-700 dark:text-zinc-300">3</span> to view policies, <span className="font-bold text-zinc-700 dark:text-zinc-300">4</span> for the education module.</li>
+                  <li>• e.g. buy: <span className="font-bold text-zinc-700 dark:text-zinc-300">1*1*2*1*1</span> (Eng → Buy → Boda → Rider → Confirm).</li>
                 </ul>
               </div>
             </div>
