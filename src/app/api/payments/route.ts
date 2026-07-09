@@ -25,21 +25,29 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Normalise to Paystack Kenya format: 254XXXXXXXXX (no leading + or 0)
-    let normalised = phoneNumber.trim().replace(/\s+/g, '');
-    if (normalised.startsWith('+254')) {
-      normalised = normalised.slice(1);           // +254... → 254...
-    } else if (normalised.startsWith('0')) {
-      normalised = '254' + normalised.slice(1);   // 07... → 2547...
-    } else if (!normalised.startsWith('254')) {
-      normalised = '254' + normalised;            // bare number → 254...
+    // Normalise to Paystack Kenya required format: +254XXXXXXXXX
+    // Strip everything except digits first, then prepend +254
+    let digits = phoneNumber.trim().replace(/\D/g, '');   // remove all non-digit chars
+    if (digits.startsWith('254')) {
+      digits = digits;                                     // 254XXXXXXXXX → keep
+    } else if (digits.startsWith('0')) {
+      digits = '254' + digits.slice(1);                   // 07XXXXXXXX → 254XXXXXXXXX
+    } else {
+      digits = '254' + digits;                            // bare number → 254XXXXXXXXX
+    }
+    const normalised = '+' + digits;                      // always prefix with +
+
+    if (digits.length !== 12) {
+      return NextResponse.json(
+        { success: false, message: `Phone number must be 12 digits after country code. Got: ${normalised}` },
+        { status: 400 }
+      );
     }
 
-    // Paystack amounts are in the smallest currency unit (kobo/cents).
-    // For KES, Paystack uses integer KES (not sub-units), so multiply × 100.
+    // Paystack KES amounts are in cents (×100)
     const amountInCents = Math.round(Number(amount) * 100);
 
-    const customerEmail = email || `${normalised}@bimaos.co.ke`;
+    const customerEmail = email || `${digits}@bimaos.co.ke`;
 
     console.log(`[Paystack M-Pesa] Initiating STK push → ${normalised} | KES ${amount} | Ref: ${accountReference}`);
 
@@ -54,7 +62,7 @@ export async function POST(req: NextRequest) {
         amount: amountInCents,
         currency: 'KES',
         mobile_money: {
-          phone: normalised,
+          phone: normalised,   // +254XXXXXXXXX
           provider: 'mpesa',
         },
         reference: accountReference || `BOS-${Date.now()}`,
@@ -81,8 +89,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Paystack returns status: "send_otp" | "pay_offline" | "success"
-    // For M-Pesa, "pay_offline" means the STK push was dispatched to the phone.
+    // Paystack M-Pesa returns status: "pay_offline" when STK push is dispatched
     const reference = paystackData.data?.reference || accountReference;
     const status = paystackData.data?.status;
 
@@ -96,7 +103,7 @@ export async function POST(req: NextRequest) {
       message:
         status === 'success'
           ? `Payment of KES ${amount} completed. Reference: ${reference}`
-          : `M-Pesa STK push sent to ${normalised}. Enter your M-Pesa PIN to complete payment. Reference: ${reference}`,
+          : `M-Pesa STK push sent to ${normalised}. Enter your M-Pesa PIN to complete. Reference: ${reference}`,
     });
   } catch (error) {
     console.error('[Payment Error]:', error);
