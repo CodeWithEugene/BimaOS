@@ -1225,26 +1225,17 @@ export default function ClientPortalPage() {
 
                     {/* M-Pesa Payment Block */}
                     <div className="border border-emerald-200 dark:border-emerald-900 rounded-xl p-3 bg-emerald-50/50 dark:bg-emerald-950/20 space-y-2">
-                      <div className="flex items-center justify-between text-left">
-                        <div>
-                          <div className="flex items-center gap-1.5">
-                            <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                            <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">M-Pesa via Paystack</span>
-                          </div>
-                          <p className="text-xs font-mono text-zinc-700 dark:text-zinc-300 mt-0.5">
-                            {mpesaPhone || 'No phone on file'}
-                          </p>
-                        </div>
-                        <Smartphone className="h-5 w-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+                      <div className="flex items-center gap-1.5">
+                        <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                        <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">M-Pesa via Paystack</span>
                       </div>
-                      {!mpesaPhone && (
-                        <Input
-                          placeholder="07xxxxxxxx"
-                          value={mpesaPhone}
-                          onChange={(e) => setMpesaPhone(e.target.value)}
-                          className="h-7 text-xs rounded-lg"
-                        />
-                      )}
+                      <Input
+                        placeholder="07xxxxxxxx"
+                        value={mpesaPhone}
+                        onChange={(e) => setMpesaPhone(e.target.value)}
+                        className="h-8 text-xs rounded-lg font-mono"
+                      />
+                      <p className="text-[10px] text-zinc-400">Enter your M-Pesa number to receive the STK push</p>
                     </div>
 
                     <p className="text-[11px] text-zinc-500 dark:text-zinc-400 leading-normal">
