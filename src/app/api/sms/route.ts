@@ -26,20 +26,20 @@ export async function POST(req: NextRequest) {
     if (lower.includes('balance') || lower.includes('policy')) {
       return NextResponse.json({
         success: true,
-        response: 'You have 2 active policies. Reply with POLICY <number> for details or dial *384*XXX#.',
+        response: 'You have 2 active policies. Reply with POLICY <number> for details or dial *384*11400#.',
       });
     }
 
     if (lower.includes('hello') || lower.includes('hi') || lower.includes('help')) {
       return NextResponse.json({
         success: true,
-        response: 'Welcome to BimaOS! Dial *384*XXX# to buy insurance, file a claim, or check your policies.',
+        response: 'Welcome to BimaOS! Dial *384*11400# to buy insurance, file a claim, or check your policies.',
       });
     }
 
     return NextResponse.json({
       success: true,
-      response: 'Thank you for contacting BimaOS. Dial *384*XXX# or visit bimaos.app for assistance.',
+      response: 'Thank you for contacting BimaOS. Dial *384*11400# or visit bimaos.app for assistance.',
     });
   } catch (error) {
     console.error('[SMS Error]:', error);

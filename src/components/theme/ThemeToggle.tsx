@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { Moon, Sun, Monitor } from 'lucide-react';
 import { useTheme } from './ThemeProvider';
 
@@ -7,8 +8,22 @@ const icons = { dark: Moon, light: Sun, system: Monitor } as const;
 
 export function ThemeToggle() {
   const { theme, cycle } = useTheme();
-  const Icon = icons[theme];
+  const [mounted, setMounted] = useState(false);
 
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return (
+      <button className="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200 dark:border-zinc-800 bg-transparent text-zinc-600 dark:text-zinc-400">
+        <div className="h-4 w-4" />
+      </button>
+    );
+  }
+
+  const Icon = icons[theme];
   const label = theme === 'dark' ? 'Dark' : theme === 'light' ? 'Light' : 'System';
 
   return (

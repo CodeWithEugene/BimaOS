@@ -1,15 +1,24 @@
 'use client';
 
 import { useState } from 'react';
-import { Shield, Mail, Lock, ArrowRight, Smartphone, TrendingUp } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { createClient } from '@/lib/supabase/client';
+import { Shield, Mail, Lock, ArrowRight, Smartphone, TrendingUp, AlertCircle, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import Image from 'next/image';
 
 type Tab = 'signin' | 'signup';
+type UserRole = 'consumer' | 'insurer';
 
 export default function LoginPage() {
+  const router = useRouter();
+  const supabase = createClient();
+
   const [tab, setTab] = useState<Tab>('signin');
+  const [roleSelection, setRoleSelection] = useState<UserRole>('consumer');
   const [success, setSuccess] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   // Sign In
   const [signinEmail, setSigninEmail] = useState('');
@@ -19,18 +28,90 @@ export default function LoginPage() {
   const [signupName, setSignupName] = useState('');
   const [signupEmail, setSignupEmail] = useState('');
   const [signupPassword, setSignupPassword] = useState('');
+  const [signupNationalId, setSignupNationalId] = useState('');
+  const [signupKraPin, setSignupKraPin] = useState('');
   const [agreed, setAgreed] = useState(false);
 
-  const handleSignin = () => {
-    setSuccess(true);
+  const handleSignin = async () => {
+    setError(null);
+    setLoading(true);
+    try {
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
+        email: signinEmail,
+        password: signinPassword,
+      });
+
+      if (authError) throw authError;
+
+      if (data.session) {
+        // Query the profile to see the role in DB
+        const { data: profile, error: profileErr } = await supabase
+          .from('users')
+          .select('role')
+          .eq('id', data.session.user.id)
+          .single();
+
+        if (profileErr) {
+          console.error('Error fetching profile:', profileErr);
+        }
+
+        const actualRole = profile?.role || 'consumer';
+        
+        setSuccess(true);
+        setTimeout(() => {
+          if (actualRole === 'insurer' || actualRole === 'adjuster' || actualRole === 'admin') {
+            router.push('/dashboard');
+          } else {
+            router.push('/client');
+          }
+        }, 1500);
+      }
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || 'Failed to sign in. Please check your credentials.');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleSignup = () => {
-    setSuccess(true);
+  const handleSignup = async () => {
+    setError(null);
+    setLoading(true);
+    try {
+      const { data, error: authError } = await supabase.auth.signUp({
+        email: signupEmail,
+        password: signupPassword,
+        options: {
+          data: {
+            full_name: signupName,
+            role: roleSelection,
+            national_id_number: roleSelection === 'consumer' ? signupNationalId : undefined,
+            kra_pin: roleSelection === 'consumer' ? signupKraPin : undefined,
+          },
+        },
+      });
+
+      if (authError) throw authError;
+
+      setSuccess(true);
+      setTimeout(() => {
+        if (roleSelection === 'insurer') {
+          router.push('/dashboard');
+        } else {
+          router.push('/client');
+        }
+      }, 1500);
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || 'Failed to create account.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const reset = () => {
     setSuccess(false);
+    setError(null);
     setSigninEmail('');
     setSigninPassword('');
     setSignupName('');
@@ -48,22 +129,21 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex">
       {/* Brand half */}
-      <div className="hidden lg:flex flex-col justify-between w-1/2 bg-zinc-900 dark:bg-black p-12 relative overflow-hidden">
-        <div className="absolute inset-0 opacity-[0.03]"
-          style={{
-            backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)',
-            backgroundSize: '32px 32px',
-          }}
-        />
-        <div>
-          <Image src="/BimaOS_logo_horizontal.png" alt="BimaOS" width={112} height={28} className="h-7 w-auto brightness-0 invert" priority />
+      <div className="hidden lg:flex flex-col justify-between w-1/2 p-12 relative overflow-hidden bg-zinc-950">
+        <div className="absolute inset-0">
+          <Image src="/mama_mboga.png" alt="" fill className="object-cover" priority />
+          <div className="absolute inset-0 bg-black/60" />
+          <div className="absolute inset-0 bg-black/30" />
         </div>
         <div className="relative z-10">
+          <Image src="/BimaOS_logo_horizontal.png" alt="BimaOS" width={112} height={28} className="brightness-0 invert" style={{ height: '1.75rem', width: 'auto' }} priority />
+        </div>
+        <div className="relative z-10 text-left">
           <h1 className="text-4xl font-bold text-white mb-4 leading-tight">
             Insurance for<br />Every African
           </h1>
-          <p className="text-zinc-400 text-lg max-w-md mb-10">
-            Open insurance infrastructure that makes coverage accessible, affordable, and instant — starting from KES 10/day.
+          <p className="text-zinc-300 text-lg max-w-md mb-10">
+            Open insurance infrastructure that makes coverage accessible, affordable, and instant — starting from KES 20/day.
           </p>
           <div className="space-y-5">
             {perks.map((perk) => (
@@ -76,7 +156,7 @@ export default function LoginPage() {
             ))}
           </div>
         </div>
-        <p className="relative z-10 text-xs text-zinc-600">
+        <p className="relative z-10 text-xs text-zinc-500">
           Africa&apos;s Talking Insurtech Hackathon 2025
         </p>
       </div>
@@ -86,11 +166,11 @@ export default function LoginPage() {
         <div className="w-full max-w-sm">
           {/* Mobile logo */}
           <div className="lg:hidden flex justify-center mb-8">
-            <Image src="/BimaOS_logo_horizontal.png" alt="BimaOS" width={112} height={28} className="h-7 w-auto dark:brightness-0 dark:invert" priority />
+            <Image src="/BimaOS_logo_horizontal.png" alt="BimaOS" width={112} height={28} className="dark:brightness-0 dark:invert" style={{ height: '1.75rem', width: 'auto' }} priority />
           </div>
 
-          {/* Tabs */}
-          <div className="flex mb-8 bg-zinc-200 dark:bg-zinc-800 rounded-lg p-1">
+          {/* Tab Switcher: Sign In vs Sign Up */}
+          <div className="flex mb-6 bg-zinc-200 dark:bg-zinc-800 rounded-lg p-1">
             <button
               onClick={() => { setTab('signin'); reset(); }}
               className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${
@@ -113,35 +193,74 @@ export default function LoginPage() {
             </button>
           </div>
 
-          {/* Success */}
+          {/* Success Screen */}
           {success && (
-            <div className="text-center">
+            <div className="text-center py-6">
               <div className="flex justify-center mb-4">
-                <div className="h-14 w-14 rounded-full bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center">
+                <div className="h-14 w-14 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
                   <Shield className="h-7 w-7 text-emerald-600 dark:text-emerald-400" />
                 </div>
               </div>
               <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100 mb-1">
-                {tab === 'signup' ? 'Account Created!' : 'Signed In!'}
+                {tab === 'signup' ? 'Account Created!' : 'Welcome Back!'}
               </h2>
               <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-6">
-                Welcome to BimaOS. You&apos;re now authenticated.
+                {tab === 'signup' ? 'Setting up your profile...' : 'Redirecting to your portal...'}
               </p>
-              <a
-                href="/dashboard"
-                className="w-full inline-flex h-10 items-center justify-center rounded-lg bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200 px-4 text-sm font-medium transition-colors"
-              >
-                Go to Dashboard
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </a>
+              <div className="flex justify-center">
+                <Loader2 className="h-6 w-6 animate-spin text-zinc-900 dark:text-white" />
+              </div>
             </div>
           )}
 
-          {/* Sign In */}
+          {/* Error Alert */}
+          {error && (
+            <div className="mb-6 p-4 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900 rounded-lg flex items-start gap-3">
+              <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400 shrink-0 mt-0.5" />
+              <div className="text-xs text-red-700 dark:text-red-400 font-medium">
+                {error}
+              </div>
+            </div>
+          )}
+
+          {/* Role Picker (Subscriber vs Insurance Provider) */}
+          {!success && (
+            <div className="mb-6">
+              <label className="text-xs font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider block mb-2">Portal Access Mode</label>
+              <div className="grid grid-cols-2 gap-2 p-1 bg-zinc-200 dark:bg-zinc-800 rounded-lg">
+                <button
+                  type="button"
+                  onClick={() => setRoleSelection('consumer')}
+                  className={`py-1.5 text-xs font-semibold rounded-md transition-colors ${
+                    roleSelection === 'consumer'
+                      ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 shadow-xs'
+                      : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-700'
+                  }`}
+                >
+                  Subscriber / Client
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRoleSelection('insurer')}
+                  className={`py-1.5 text-xs font-semibold rounded-md transition-colors ${
+                    roleSelection === 'insurer'
+                      ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 shadow-xs'
+                      : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-700'
+                  }`}
+                >
+                  Insurance Provider
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Sign In View */}
           {!success && tab === 'signin' && (
             <div>
-              <h1 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100 mb-1">Welcome back</h1>
-              <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-6">Sign in to your account.</p>
+              <h1 className="text-xl font-bold text-zinc-900 dark:text-zinc-100 mb-1">Welcome back</h1>
+              <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-6">
+                Sign in to your {roleSelection === 'consumer' ? 'Client' : 'Underwriter'} portal.
+              </p>
               <div className="space-y-4">
                 <div>
                   <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1 block">Email</label>
@@ -171,9 +290,12 @@ export default function LoginPage() {
                 </div>
                 <button
                   onClick={handleSignin}
-                  disabled={!signinEmail || !signinPassword}
+                  disabled={!signinEmail || !signinPassword || loading}
                   className="w-full inline-flex h-10 items-center justify-center rounded-lg bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200 px-4 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
+                  {loading ? (
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  ) : null}
                   Sign In
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </button>
@@ -181,11 +303,13 @@ export default function LoginPage() {
             </div>
           )}
 
-          {/* Sign Up */}
+          {/* Sign Up View */}
           {!success && tab === 'signup' && (
             <div>
-              <h1 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100 mb-1">Create your account</h1>
-              <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-6">Get insured in under 3 minutes.</p>
+              <h1 className="text-xl font-bold text-zinc-900 dark:text-zinc-100 mb-1">Create your account</h1>
+              <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-6">
+                Register as a {roleSelection === 'consumer' ? 'Subscriber' : 'Insurance Provider'}.
+              </p>
               <div className="space-y-4">
                 <div>
                   <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1 block">Full Name</label>
@@ -221,6 +345,28 @@ export default function LoginPage() {
                     />
                   </div>
                 </div>
+
+                {roleSelection === 'consumer' && (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1 block">National ID</label>
+                      <Input
+                        placeholder="30123456"
+                        value={signupNationalId}
+                        onChange={(e) => setSignupNationalId(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1 block">KRA PIN</label>
+                      <Input
+                        placeholder="A012345678B"
+                        value={signupKraPin}
+                        onChange={(e) => setSignupKraPin(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                )}
+
                 <label className="flex items-start gap-3 cursor-pointer">
                   <input
                     type="checkbox"
@@ -237,9 +383,12 @@ export default function LoginPage() {
                 </label>
                 <button
                   onClick={handleSignup}
-                  disabled={!signupName || !signupEmail || !signupPassword || signupPassword.length < 8 || !agreed}
+                  disabled={!signupName || !signupEmail || !signupPassword || signupPassword.length < 8 || !agreed || loading}
                   className="w-full inline-flex h-10 items-center justify-center rounded-lg bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200 px-4 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
+                  {loading ? (
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  ) : null}
                   Create Account
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </button>
@@ -249,9 +398,9 @@ export default function LoginPage() {
 
           {/* Footer */}
           <p className="mt-8 text-xs text-center text-zinc-400 dark:text-zinc-600">
-            For insurers and agents.{' '}
-            <a href="/dashboard" className="text-zinc-900 dark:text-zinc-100 font-medium hover:underline">
-              Skip to demo dashboard
+            For testing underwriters.{' '}
+            <a href="/dashboard" className="text-zinc-900 dark:text-zinc-100 font-semibold hover:underline">
+              Skip to insurer demo dashboard
             </a>
           </p>
         </div>

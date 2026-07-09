@@ -9,7 +9,8 @@ export function Logo({ className }: { className?: string }) {
         alt="BimaOS"
         width={112}
         height={28}
-        className="h-7 w-auto dark:brightness-0 dark:invert"
+        className="dark:brightness-0 dark:invert"
+        style={{ width: 'auto', height: '1.75rem' }}
         priority
       />
     </Link>

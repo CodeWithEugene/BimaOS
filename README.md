@@ -4,7 +4,7 @@
 
 # BimaOS — Insurance for Every African
 
-Open insurance infrastructure for Africa. Get covered via USSD in under 3 minutes. AI-powered claims, blockchain trust, M-Pesa payouts.
+Open insurance infrastructure for Africa. Get covered via USSD by dialing **`*384*11400#`** on any phone (no internet required). File active claims or query status via SMS short code **`21565`**. AI-powered underwriting and claims, blockchain trust ledger, M-Pesa / Paystack payouts.
 
 Built for the Africa's Talking Insurtech Hackathon 2025.
 
@@ -12,7 +12,7 @@ Built for the Africa's Talking Insurtech Hackathon 2025.
 
 - **USSD & SMS** — Buy insurance and file claims via USSD (no smartphone required)
 - **AI Claims Processing** — Image analysis with confidence scoring, fraud detection
-- **Blockchain Ledger** — Immutable claim/policy records on Stellar Soroban
+- **Blockchain Ledger** — Immutable claim/policy records on Ethereum Sepolia Smart Contract
 - **M-Pesa Payouts** — Instant claim settlements via mobile money
 - **Human-in-the-Loop** — Telegram-based adjuster review for flagged claims
 - **Insurer Dashboard** — Claims management, analytics, USSD simulator
@@ -25,7 +25,7 @@ Built for the Africa's Talking Insurtech Hackathon 2025.
 | Language | TypeScript |
 | Styling | Tailwind CSS v4, shadcn/ui |
 | Database | Supabase (PostgreSQL) |
-| Blockchain | Stellar Soroban (simulated) |
+| Blockchain | Ethereum Sepolia (ethers.js, Solidity contract) |
 | AI | Computer vision analysis (simulated) |
 | USSD/SMS | Africa's Talking API |
 | Mobile Money | M-Pesa API |
@@ -49,13 +49,21 @@ Open [http://localhost:3000](http://localhost:3000).
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 
-# Africa's Talking (optional — simulated fallback)
+# Africa's Talking
 AT_API_KEY=
 AT_USERNAME=
-AT_USSD_CODE=*384*XXX#
+AT_USSD_CODE=*384*11400#
+AT_SMS_SHORTCODE=21565
 
-# Stellar (optional — simulated fallback)
-STELLAR_SECRET_KEY=
+# Paystack Configuration
+PAYSTACK_PUBLIC_KEY=
+PAYSTACK_SECRET_KEY=
+
+# Ethereum Sepolia Testnet
+BLOCKCHAIN_RPC_URL=https://ethereum-sepolia-rpc.publicnode.com
+METAMASK_WALLET_ADDRESS=
+BIMA_OS_REGISTRY_ADDRESS=
+OPERATOR_PRIVATE_KEY=
 
 # M-Pesa (optional — simulated fallback)
 MPESA_CONSUMER_KEY=
@@ -119,6 +127,7 @@ npm run lint      # lint check
 | `/api/telegram` | Telegram bot webhook |
 | `/api/verify` | Claims verification API |
 | `/api/sms` | SMS notification API |
+| `/api/payments/paystack` | Paystack payment webhook handler |
 
 ## License
 

@@ -1,5 +1,5 @@
-import { Shield } from 'lucide-react';
 import Link from 'next/link';
+import { Logo } from '@/components/shared/Logo';
 
 export function Footer() {
   return (
@@ -7,12 +7,7 @@ export function Footer() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
           <div>
-            <div className="flex items-center gap-2 mb-4">
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-zinc-900 dark:bg-white">
-                <Shield className="h-3.5 w-3.5 text-white dark:text-zinc-900" />
-              </div>
-              <span className="text-sm font-semibold">BimaOS</span>
-            </div>
+            <Logo className="mb-4" />
             <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed max-w-xs">
               Open insurance infrastructure for Africa. Making coverage accessible to everyone through USSD, AI, and blockchain.
             </p>

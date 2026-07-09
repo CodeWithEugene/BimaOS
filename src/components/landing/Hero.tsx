@@ -64,19 +64,25 @@ export function Hero() {
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10">
                 <Smartphone className="h-4 w-4 text-white" />
               </div>
-              <span className="text-sm text-zinc-300">USSD &amp; SMS</span>
+              <span className="text-sm text-zinc-300 font-mono">USSD: *384*11400#</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10">
+                <Smartphone className="h-4 w-4 text-white" />
+              </div>
+              <span className="text-sm text-zinc-300 font-mono">SMS: 21565</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10">
                 <ShieldCheck className="h-4 w-4 text-white" />
               </div>
-              <span className="text-sm text-zinc-300">AI-Powered</span>
+              <span className="text-sm text-zinc-300">AI-Powered Underwriting</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10">
                 <Users className="h-4 w-4 text-white" />
               </div>
-              <span className="text-sm text-zinc-300">For Everyone</span>
+              <span className="text-sm text-zinc-300">Stellar Blockchain Payouts</span>
             </div>
           </div>
         </div>

@@ -1,4 +1,5 @@
 import { Sidebar } from '@/components/dashboard/Sidebar';
+import { Logo } from '@/components/shared/Logo';
 
 export default function DashboardLayout({
   children,
@@ -11,9 +12,7 @@ export default function DashboardLayout({
       <main className="flex-1 bg-zinc-50 dark:bg-zinc-900">
         <div className="h-16 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 flex items-center px-6">
           <div className="flex items-center gap-3">
-            <div className="flex lg:hidden h-8 w-8 items-center justify-center rounded-lg bg-zinc-900 dark:bg-white">
-              <svg className="h-4 w-4 text-white dark:text-zinc-900" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-            </div>
+            <Logo className="lg:hidden" />
             <div className="h-8 w-px bg-zinc-200 dark:bg-zinc-800 hidden lg:block" />
             <h1 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">BimaOS Insurer Portal</h1>
           </div>

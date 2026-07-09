@@ -12,9 +12,9 @@ export function buildUssdMenu(text: string): UssdResponse {
       type: 'CON',
       message: `Welcome to BimaOS - Insurance for Every African
 
-1. Buy Insurance
-2. File a Claim
-3. My Policies
+1. Buy Micro-Insurance
+2. File active Claim
+3. View My Policies
 4. Learn About Insurance`,
     };
   }
@@ -37,60 +37,99 @@ export function buildUssdMenu(text: string): UssdResponse {
   };
 }
 
+const categories = {
+  '1': { id: 'kilimo', name: '🌾 Kilimo Shield', desc: 'Parametric Crop Cover' },
+  '2': { id: 'boda', name: '🏍️ Boda & Motor', desc: 'Rider Vehicle Cover' },
+  '3': { id: 'biashara', name: '🏪 Biashara Cover', desc: 'Market Trader Cover' },
+  '4': { id: 'health', name: '🩺 Afya Care', desc: 'Health & Life Cover' }
+};
+
+const plansMap: Record<string, Record<string, { name: string; premium: number }>> = {
+  '1': {
+    '1': { name: 'Crop Guard Basic', premium: 150 },
+    '2': { name: 'Weather-Indexed Plus', premium: 450 },
+    '3': { name: 'Parametric Shield', premium: 1200 }
+  },
+  '2': {
+    '1': { name: 'Boda Daily', premium: 20 },
+    '2': { name: 'Rider Commuter', premium: 100 },
+    '3': { name: 'Comprehensive Motor', premium: 500 }
+  },
+  '3': {
+    '1': { name: 'Mama Mboga Daily', premium: 30 },
+    '2': { name: 'Market Stall Standard', premium: 150 },
+    '3': { name: 'Retail Shop Secure', premium: 800 }
+  },
+  '4': {
+    '1': { name: 'Bima Afya Basic', premium: 50 },
+    '2': { name: 'Sacco Health Cover', premium: 200 },
+    '3': { name: 'Afya Family Shield', premium: 600 }
+  }
+};
+
 function handleBuyInsurance(parts: string[]): UssdResponse {
   const step = parts.length;
 
   if (step === 1) {
     return {
       type: 'CON',
-      message: `Select Cover Type:
+      message: `Select Cover Category:
 
-1. Daily Boda Cover - KES 20/day
-2. Daily Market Cover - KES 30/day
-3. Seasonal Crop Cover - KES 150/season
-4. Health Cover - KES 50/day
-5. SME Fire Cover - KES 100/day
-6. Life Cover - KES 40/day`,
+1. Kilimo Shield (Agriculture)
+2. Boda & Motor (Vehicle)
+3. Biashara Cover (Micro-Retail)
+4. Afya Care (Health & Life)`,
     };
   }
 
-  const productIndex = parseInt(parts[1]);
-  const products: Record<number, { name: string; premium: number }> = {
-    1: { name: 'Daily Boda Cover', premium: 20 },
-    2: { name: 'Daily Market Cover', premium: 30 },
-    3: { name: 'Seasonal Crop Cover', premium: 150 },
-    4: { name: 'Health Cover', premium: 50 },
-    5: { name: 'SME Fire Cover', premium: 100 },
-    6: { name: 'Life Cover', premium: 40 },
-  };
-
-  const product = products[productIndex];
-  if (!product) {
-    return { type: 'END', message: 'Invalid selection. Please try again.' };
+  const categoryIndex = parts[1];
+  const category = categories[categoryIndex as keyof typeof categories];
+  if (!category) {
+    return { type: 'END', message: 'Invalid category. Please try again.' };
   }
 
   if (step === 2) {
+    const plans = plansMap[categoryIndex];
+    if (!plans) return { type: 'END', message: 'Invalid category mapping.' };
     return {
       type: 'CON',
-      message: `${product.name}
-Premium: KES ${product.premium}
+      message: `Select Plan in ${category.name}:
 
-1. Confirm Purchase
+1. ${plans['1'].name} - KES ${plans['1'].premium}
+2. ${plans['2'].name} - KES ${plans['2'].premium}
+3. ${plans['3'].name} - KES ${plans['3'].premium}`,
+    };
+  }
+
+  const planIndex = parts[2];
+  const plans = plansMap[categoryIndex];
+  const plan = plans?.[planIndex];
+  if (!plan) {
+    return { type: 'END', message: 'Invalid plan selection.' };
+  }
+
+  if (step === 3) {
+    return {
+      type: 'CON',
+      message: `${plan.name} (${category.name})
+Premium: KES ${plan.premium}
+
+1. Confirm Purchase via M-Pesa
 2. Cancel`,
     };
   }
 
-  if (step === 3 && parts[2] === '1') {
+  if (step === 4 && parts[3] === '1') {
     const policyRef = `BOS${Date.now().toString(36).toUpperCase()}`;
     return {
       type: 'END',
       message: `✅ Purchase Initiated!
 
 Policy: ${policyRef}
-Type: ${product.name}
-Amount: KES ${product.premium}
+Type: ${plan.name}
+Amount: KES ${plan.premium}
 
-Check your phone for M-Pesa PIN prompt to complete payment. You will receive an SMS confirmation.`,
+Check your phone for M-Pesa PIN prompt. You will receive an SMS confirmation.`,
     };
   }
 
@@ -120,11 +159,11 @@ Example: "Hit by another boda on Kenyatta Ave"`,
     const claimRef = `CLM${Date.now().toString(36).toUpperCase()}`;
     return {
       type: 'END',
-      message: `✅ Claim Filed!
+      message: `✅ Claim Registered!
 
 Reference: ${claimRef}
 
-You will receive an SMS with a link to upload photos of the damage for quick processing.`,
+You will receive an SMS with a link to upload photos, ID, and KRA certificate for AI processing.`,
     };
   }
 
@@ -137,7 +176,7 @@ function handleMyPolicies(): UssdResponse {
     message: `📋 Policy Status:
 
 To check your policy details and claim history, please visit:
-bimaos.app/my-policies
+bima-os.vercel.app/client
 
 Or reply with your phone number for an SMS update.`,
   };
@@ -154,8 +193,7 @@ function handleEducation(parts: string[]): UssdResponse {
 1. What is Insurance?
 2. How to File a Claim?
 3. Understanding Premiums
-4. Insurance Tips
-5. Back`,
+4. Insurance Tips`,
     };
   }
 
@@ -164,7 +202,7 @@ function handleEducation(parts: string[]): UssdResponse {
     '1': `📖 Insurance is a way to protect yourself from unexpected financial loss. You pay a small amount (premium) regularly, and the insurer covers you when something goes wrong - like an accident, illness, or crop failure.`,
     '2': `📋 To file a claim:
 
-1. Dial *384*XXX# on your phone
+1. Dial *384*11400# on your phone
 2. Select "File a Claim"
 3. Enter your policy number
 4. Describe what happened

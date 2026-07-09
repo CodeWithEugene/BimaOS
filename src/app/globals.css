@@ -126,3 +126,50 @@
     color: var(--foreground);
   }
 }
+
+/* High Contrast Dark Mode */
+.hc-dark {
+  --background: #000000 !important;
+  --foreground: #ffffff !important;
+  --card: #000000 !important;
+  --card-foreground: #ffffff !important;
+  --popover: #000000 !important;
+  --popover-foreground: #ffffff !important;
+  --primary: #ffffff !important;
+  --primary-foreground: #000000 !important;
+  --secondary: #222222 !important;
+  --secondary-foreground: #ffffff !important;
+  --muted: #222222 !important;
+  --muted-foreground: #dddddd !important;
+  --accent: #ffff00 !important;
+  --accent-foreground: #000000 !important;
+  --border: #ffffff !important;
+}
+
+/* High Contrast Light Mode */
+.hc-light {
+  --background: #ffffff !important;
+  --foreground: #000000 !important;
+  --card: #ffffff !important;
+  --card-foreground: #000000 !important;
+  --popover: #ffffff !important;
+  --popover-foreground: #000000 !important;
+  --primary: #000000 !important;
+  --primary-foreground: #ffffff !important;
+  --secondary: #f0f0f0 !important;
+  --secondary-foreground: #000000 !important;
+  --muted: #f0f0f0 !important;
+  --muted-foreground: #333333 !important;
+  --accent: #0000ee !important;
+  --accent-foreground: #ffffff !important;
+  --border: #000000 !important;
+}
+
+/* Dyslexia-Friendly Font Override */
+.font-dyslexia, .font-dyslexia * {
+  font-family: 'Comic Sans MS', cursive, sans-serif !important;
+  letter-spacing: 0.08em !important;
+  word-spacing: 0.15em !important;
+  line-height: 1.6 !important;
+}
+

@@ -6,7 +6,7 @@ const features = [
   {
     icon: Smartphone,
     title: 'USSD & SMS First',
-    description: 'Works on any phone — no smartphone or internet required. Dial *384*XXX# to buy, claim, and manage policies.',
+    description: 'Works on any phone — no smartphone or internet required. Dial *384*11400# to buy, claim, and manage policies.',
   },
   {
     icon: Bot,
@@ -52,13 +52,13 @@ export function Features() {
           {features.map((feature) => (
             <div
               key={feature.title}
-              className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-6 hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors"
+              className="group rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-6 transition-all duration-300 hover:bg-zinc-900 dark:hover:bg-zinc-100 hover:border-zinc-900 dark:hover:border-zinc-100"
             >
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-zinc-100 dark:bg-zinc-800 mb-4">
-                <feature.icon className="h-5 w-5 text-zinc-700 dark:text-zinc-300" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-zinc-100 dark:bg-zinc-800 mb-4 transition-colors duration-300 group-hover:bg-white/20 dark:group-hover:bg-zinc-900/20">
+                <feature.icon className="h-5 w-5 text-zinc-700 dark:text-zinc-300 transition-colors duration-300 group-hover:text-white dark:group-hover:text-zinc-900" />
               </div>
-              <h3 className="font-semibold text-zinc-900 dark:text-zinc-100 mb-2">{feature.title}</h3>
-              <p className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">{feature.description}</p>
+              <h3 className="font-semibold text-zinc-900 dark:text-zinc-100 mb-2 transition-colors duration-300 group-hover:text-white dark:group-hover:text-zinc-900">{feature.title}</h3>
+              <p className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed transition-colors duration-300 group-hover:text-zinc-300 dark:group-hover:text-zinc-600">{feature.description}</p>
             </div>
           ))}
         </div>

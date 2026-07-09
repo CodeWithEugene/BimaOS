@@ -5,7 +5,7 @@ import { Phone, Camera, CheckCircle, Wallet } from 'lucide-react';
 const steps = [
   {
     icon: Phone,
-    title: 'Dial *384*XXX#',
+    title: 'Dial *384*11400#',
     description: 'Open the USSD menu on any phone. No app, no internet, no smartphone needed.',
     detail: 'Select "Buy Insurance" and choose your cover type.',
   },
@@ -17,8 +17,8 @@ const steps = [
   },
   {
     icon: Camera,
-    title: 'File a Claim via SMS',
-    description: 'Send a photo of the damage via the secure link we SMS you. Our AI analyzes it instantly.',
+    title: 'File a Claim via SMS (21565)',
+    description: 'Send a photo of the damage via the secure link we SMS you, or trigger a claim text to Short Code 21565.',
     detail: 'Get a confidence score and update in under 60 seconds.',
   },
   {

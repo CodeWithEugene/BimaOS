@@ -91,13 +91,13 @@ export function ForInsurers() {
           {benefits.map((benefit) => (
             <div
               key={benefit.title}
-              className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-5"
+              className="group rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-5 transition-all duration-300 hover:bg-zinc-900 dark:hover:bg-zinc-100 hover:border-zinc-900 dark:hover:border-zinc-100"
             >
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-zinc-100 dark:bg-zinc-800 mb-3">
-                <benefit.icon className="h-4.5 w-4.5 text-zinc-700 dark:text-zinc-300" />
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-zinc-100 dark:bg-zinc-800 mb-3 transition-colors duration-300 group-hover:bg-white/20 dark:group-hover:bg-zinc-900/20">
+                <benefit.icon className="h-4.5 w-4.5 text-zinc-700 dark:text-zinc-300 transition-colors duration-300 group-hover:text-white dark:group-hover:text-zinc-900" />
               </div>
-              <h3 className="font-semibold text-sm text-zinc-900 dark:text-zinc-100 mb-1">{benefit.title}</h3>
-              <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed">{benefit.description}</p>
+              <h3 className="font-semibold text-sm text-zinc-900 dark:text-zinc-100 mb-1 transition-colors duration-300 group-hover:text-white dark:group-hover:text-zinc-900">{benefit.title}</h3>
+              <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed transition-colors duration-300 group-hover:text-zinc-300 dark:group-hover:text-zinc-600">{benefit.description}</p>
             </div>
           ))}
         </div>

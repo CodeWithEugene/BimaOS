@@ -48,26 +48,28 @@ export function Products() {
           {products.map((product) => (
             <div
               key={product.type}
-              className="relative rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-5 hover:border-zinc-300 dark:hover:border-zinc-700 transition-all"
+              className="group relative rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-5 transition-all duration-300 hover:bg-zinc-900 dark:hover:bg-zinc-100 hover:border-zinc-900 dark:hover:border-zinc-100"
             >
-              <div className={`flex h-10 w-10 items-center justify-center rounded-lg border mb-3 ${product.color}`}>
-                {iconMap[product.icon] || iconMap.Shield}
+              <div className={`flex h-10 w-10 items-center justify-center rounded-lg border mb-3 transition-colors duration-300 ${product.color} group-hover:bg-white/20 dark:group-hover:bg-zinc-900/20 group-hover:border-transparent`}>
+                <span className="transition-colors duration-300 group-hover:text-white dark:group-hover:text-zinc-900">
+                  {iconMap[product.icon] || iconMap.Shield}
+                </span>
               </div>
-              <h3 className="font-semibold text-zinc-900 dark:text-zinc-100 text-sm">{product.name}</h3>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1 line-clamp-2 leading-relaxed">{product.description}</p>
+              <h3 className="font-semibold text-zinc-900 dark:text-zinc-100 text-sm transition-colors duration-300 group-hover:text-white dark:group-hover:text-zinc-900">{product.name}</h3>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1 line-clamp-2 leading-relaxed transition-colors duration-300 group-hover:text-zinc-300 dark:group-hover:text-zinc-600">{product.description}</p>
               <div className="mt-3 flex items-end justify-between">
                 <div>
-                  <p className="text-lg font-bold text-zinc-900 dark:text-zinc-50">
+                  <p className="text-lg font-bold text-zinc-900 dark:text-zinc-50 transition-colors duration-300 group-hover:text-white dark:group-hover:text-zinc-900">
                     KES {product.dailyPremium}
                   </p>
-                  <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400 transition-colors duration-300 group-hover:text-zinc-300 dark:group-hover:text-zinc-600">
                     {product.type === 'seasonal_crop' ? 'per season' : 'per day'} · up to KES {(product.coverageAmount / 1000).toFixed(0)}k
                   </p>
                 </div>
               </div>
               <Link
                 href={`/products?type=${product.type}`}
-                className="mt-3 inline-flex items-center text-xs font-medium text-zinc-900 dark:text-zinc-100 hover:underline"
+                className="mt-3 inline-flex items-center text-xs font-medium text-zinc-900 dark:text-zinc-100 transition-colors duration-300 group-hover:text-white dark:group-hover:text-zinc-900"
               >
                 Learn more <ArrowRight className="ml-1 h-3 w-3" />
               </Link>

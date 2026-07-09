@@ -13,12 +13,16 @@ import {
   ScrollText,
   Smartphone,
   LogOut,
+  Sliders,
+  Code2,
 } from 'lucide-react';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/dashboard/claims', label: 'Claims', icon: FileText },
   { href: '/dashboard/policies', label: 'Policies', icon: ScrollText },
+  { href: '/dashboard/plans', label: 'Underwriting Plans', icon: Sliders },
+  { href: '/dashboard/api', label: 'Developer APIs', icon: Code2 },
   { href: '/dashboard/agents', label: 'Agents', icon: Users },
   { href: '/dashboard/analytics', label: 'Analytics', icon: BarChart3 },
   { href: '/dashboard/ussd', label: 'USSD Simulator', icon: Smartphone },

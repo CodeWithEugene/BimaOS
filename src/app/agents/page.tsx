@@ -74,7 +74,7 @@ export default function AgentsPage() {
               ) : (
                 <div className="space-y-4">
                   <div className="rounded-lg bg-zinc-900 dark:bg-zinc-950 p-4 font-mono text-sm min-h-[120px]">
-                    <p className="text-zinc-500 text-xs mb-2">*384*XXX# Agent Mode</p>
+                    <p className="text-zinc-500 text-xs mb-2">*384*11400# Agent Mode</p>
                     <p className="text-emerald-400">
                       {policiesSold === 0
                         ? 'CON Agent Menu\n1. Sell Policy\n2. Check Commission\n3. Customer Lookup'
@@ -108,7 +108,7 @@ export default function AgentsPage() {
                   <div className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800 text-xs font-medium text-zinc-600 dark:text-zinc-400">1</div>
                   <div>
                     <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">Register via USSD</p>
-                    <p className="text-xs text-zinc-500 dark:text-zinc-400">Dial *384*XXX# and select Agent Registration</p>
+                    <p className="text-xs text-zinc-500 dark:text-zinc-400">Dial *384*11400# and select Agent Registration</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
