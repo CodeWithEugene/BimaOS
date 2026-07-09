@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { ethers } from 'ethers';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Card } from '@/components/ui/card';
@@ -100,27 +99,8 @@ export default function ClientPortalPage() {
   // Mobile sidebar trigger
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
-  // MetaMask States
-  const [walletAddress, setWalletAddress] = useState<string | null>(null);
-  const [connectingWallet, setConnectingWallet] = useState(false);
-
-  const connectWallet = async () => {
-    if (typeof window !== 'undefined' && (window as any).ethereum) {
-      setConnectingWallet(true);
-      try {
-        const provider = new ethers.BrowserProvider((window as any).ethereum);
-        const accounts = await provider.send("eth_requestAccounts", []);
-        setWalletAddress(accounts[0]);
-      } catch (err) {
-        console.error("Wallet connection failed:", err);
-        alert("Failed to connect MetaMask.");
-      } finally {
-        setConnectingWallet(false);
-      }
-    } else {
-      alert("MetaMask is not installed. Please install MetaMask to test on-chain checkout.");
-    }
-  };
+  // M-Pesa phone number state (loaded from user profile)
+  const [mpesaPhone, setMpesaPhone] = useState<string>('');
   
   // Searches
   const [policySearch, setPolicySearch] = useState('');
@@ -255,6 +235,15 @@ export default function ClientPortalPage() {
         setUser(data.session.user);
         await fetchData(data.session.user.id);
         await fetchDynamicPlans();
+        // Load phone number for M-Pesa STK push
+        const { data: userProfile } = await supabase
+          .from('users')
+          .select('phone_number')
+          .eq('id', data.session.user.id)
+          .maybeSingle();
+        if (userProfile?.phone_number) {
+          setMpesaPhone(userProfile.phone_number);
+        }
       }
     };
     checkUser();
@@ -344,31 +333,34 @@ export default function ClientPortalPage() {
 
       let checkTxHash = `0x${Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('')}`;
 
-      // 1. Client-Side MetaMask Payment Signature (Optional if connected)
-      if (walletAddress && typeof window !== 'undefined' && (window as any).ethereum) {
+      // 1. Collect M-Pesa premium payment via Paystack STK Push
+      const phoneForPayment = mpesaPhone || user?.phone || '';
+      if (phoneForPayment) {
         try {
-          const provider = new ethers.BrowserProvider((window as any).ethereum);
-          const signer = await provider.getSigner();
-          // Scale premium: e.g. 1 KES = 0.000003 ETH (Sepolia Test ETH)
-          const premiumEth = ((targetPlan.premium || 20) / 300000).toFixed(6);
-          
-          alert(`MetaMask will now prompt you to pay ${premiumEth} Sepolia ETH premium to BimaOS.`);
-          
-          const tx = await signer.sendTransaction({
-            to: process.env.NEXT_PUBLIC_OPERATOR_ADDRESS || "0x9dF8A7D3CDe8E1eD22b312bDbA65691F5CcD471c",
-            value: ethers.parseEther(premiumEth)
+          const payRef = `BOS-PAY-${Date.now().toString(36).toUpperCase()}`;
+          const payRes = await fetch('/api/payments', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              phoneNumber: phoneForPayment,
+              amount: targetPlan.premium,
+              email: user?.email || `${phoneForPayment}@bimaos.co.ke`,
+              accountReference: payRef,
+              metadata: {
+                user_id: user.id,
+                policy_type: targetPlan.id,
+              },
+            }),
           });
-          
-          console.log(`[MetaMask Premium Paid] Tx: ${tx.hash}`);
-          await tx.wait();
-          checkTxHash = tx.hash;
-        } catch (walletError) {
-          console.error("MetaMask payment failed/rejected:", walletError);
-          if (!confirm("MetaMask payment failed or was rejected. Would you like to pay using sandboxed M-Pesa instead?")) {
-            setPolicyPurchaseLoading(false);
-            return;
-          }
+          const payData = await payRes.json();
+          console.log('[M-Pesa STK Push]', payData.message);
+          // Reference returned; blockchain ledger will get its own tx hash below
+        } catch (payErr) {
+          console.error('[M-Pesa charge error]', payErr);
+          // Non-blocking: still create the policy record and blockchain log
         }
+      } else {
+        console.warn('[M-Pesa] No phone number available — STK push skipped.');
       }
 
       // 2. Insert Policy into local Supabase DB
@@ -392,7 +384,7 @@ export default function ClientPortalPage() {
       if (policyError) throw policyError;
 
       // 3. Register transaction to Ethereum Sepolia Ledger or fallback to simulation
-      let finalNetwork = walletAddress ? 'ethereum_sepolia' : 'stellar_soroban';
+      let finalNetwork = 'ethereum_sepolia';
       try {
         const chainRes = await fetch('/api/blockchain', {
           method: 'POST',
@@ -406,7 +398,6 @@ export default function ClientPortalPage() {
               coverage: targetPlan.coverage,
               custom: !selectedPlan,
               kraPin: customKraPin || null,
-              userAddress: walletAddress || null
             }
           })
         });
@@ -435,7 +426,6 @@ export default function ClientPortalPage() {
           premium: targetPlan.premium, 
           custom: !selectedPlan,
           kraPin: customKraPin || null,
-          userAddress: walletAddress || null
         }
       });
 
@@ -1233,62 +1223,41 @@ export default function ClientPortalPage() {
                       </p>
                     </div>
 
-                    {/* MetaMask Wallet Connection Block */}
-                    <div className="border border-zinc-200 dark:border-zinc-800 rounded-xl p-3 bg-zinc-50 dark:bg-zinc-900/40 space-y-2">
-                      {walletAddress ? (
-                        <div className="flex items-center justify-between text-left">
-                          <div>
-                            <div className="flex items-center gap-1">
-                              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                              <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Web3 Mode Active</span>
-                            </div>
-                            <p className="text-xs font-mono text-zinc-700 dark:text-zinc-300 mt-0.5">
-                              {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
-                            </p>
+                    {/* M-Pesa Payment Block */}
+                    <div className="border border-emerald-200 dark:border-emerald-900 rounded-xl p-3 bg-emerald-50/50 dark:bg-emerald-950/20 space-y-2">
+                      <div className="flex items-center justify-between text-left">
+                        <div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                            <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">M-Pesa via Paystack</span>
                           </div>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            onClick={() => setWalletAddress(null)}
-                            className="h-6 text-[10px] text-rose-500 font-bold px-2 rounded-md hover:bg-rose-50/50 dark:hover:bg-rose-950/20"
-                          >
-                            Disconnect
-                          </Button>
+                          <p className="text-xs font-mono text-zinc-700 dark:text-zinc-300 mt-0.5">
+                            {mpesaPhone || 'No phone on file'}
+                          </p>
                         </div>
-                      ) : (
-                        <div className="flex items-center justify-between text-left">
-                          <div>
-                            <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Ethereum Sepolia</span>
-                            <p className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 mt-0.5">
-                              Pay via MetaMask ETH
-                            </p>
-                          </div>
-                          <Button
-                            type="button"
-                            onClick={connectWallet}
-                            disabled={connectingWallet}
-                            className="h-7 text-[10px] bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 rounded-md font-bold px-3 py-1 uppercase tracking-wider"
-                          >
-                            {connectingWallet ? 'Connecting...' : 'Connect'}
-                          </Button>
-                        </div>
+                        <Smartphone className="h-5 w-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+                      </div>
+                      {!mpesaPhone && (
+                        <Input
+                          placeholder="07xxxxxxxx"
+                          value={mpesaPhone}
+                          onChange={(e) => setMpesaPhone(e.target.value)}
+                          className="h-7 text-xs rounded-lg"
+                        />
                       )}
                     </div>
 
-                    <p className="text-[11px] text-zinc-455 dark:text-zinc-400 leading-normal">
-                      {walletAddress 
-                        ? `Clicking confirm will trigger a MetaMask prompt to pay the premium using Sepolia test ETH.`
-                        : `An M-Pesa STK push prompt will be dispatched instantly to your phone. Enter your PIN to finalize underwriting.`
-                      }
+                    <p className="text-[11px] text-zinc-500 dark:text-zinc-400 leading-normal">
+                      An M-Pesa STK push prompt will be sent to your phone. Enter your PIN to complete payment. The transaction is signed and recorded on the blockchain for transparency.
                     </p>
                     <div className="flex justify-center gap-2 pt-2">
                       <Button 
                         onClick={handlePurchase} 
                         disabled={policyPurchaseLoading}
-                        className="bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 font-bold text-xs uppercase tracking-wider rounded-lg px-6"
+                        className="bg-emerald-600 text-white hover:bg-emerald-700 dark:bg-emerald-600 dark:hover:bg-emerald-500 font-bold text-xs uppercase tracking-wider rounded-lg px-6"
                       >
                         {policyPurchaseLoading && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-                        {walletAddress ? 'Confirm via MetaMask' : 'Confirm via M-Pesa'}
+                        Confirm & Pay via M-Pesa
                       </Button>
                       <Button 
                         variant="outline" 
