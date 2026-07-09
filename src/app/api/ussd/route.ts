@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { buildUssdMenu, extractPhoneNumber } from '@/lib/ussd';
+import { initiateMpesaStkPush } from '@/lib/paystack';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://ymoytcpunjvmlklapcrr.supabase.co';
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key';
@@ -46,6 +47,7 @@ export async function POST(req: NextRequest) {
     // so every menu selection is shifted one position to the right.
     if (response.type === 'END') {
       const parts = text.split('*');
+      const lang = parts[0] === '2' ? 'sw' : 'en';
 
       // 1. Confirm Purchase: <lang>*1*<categoryIndex>*<planIndex>*1
       if (parts.length === 5 && parts[1] === '1' && parts[4] === '1') {
@@ -86,8 +88,9 @@ export async function POST(req: NextRequest) {
         const category = categoryMap[categoryIndex];
 
         if (product && category) {
-          // Resolve User
-          let userId = null;
+          // Resolve (or register) the offline user so the Paystack webhook can
+          // attach the resulting policy to the right account.
+          let userId: string | null = null;
           const { data: userProfile } = await supabase
             .from('users')
             .select('id')
@@ -108,18 +111,25 @@ export async function POST(req: NextRequest) {
               userId = authData.user.id;
             } else {
               console.error('Failed to create auth user for USSD, checking fallback:', authError);
-              
-              // Fallback to searching active users or creating a dummy uuid if auth admin is not active
+
+              // Fallback to an existing user if auth admin is unavailable
               const { data: fallbackUser } = await supabase
                 .from('users')
                 .select('id')
                 .limit(1)
                 .maybeSingle();
-              userId = fallbackUser?.id;
+              userId = fallbackUser?.id ?? null;
             }
           }
 
-          if (userId) {
+          if (!userId) {
+            response.type = 'END';
+            response.message =
+              lang === 'sw'
+                ? 'Samahani, akaunti yako haikupatikana. Tafadhali sajili kwenye bima-os.vercel.app kisha ujaribu tena.'
+                : 'Sorry, we could not find your account. Please register at bima-os.vercel.app and try again.';
+          } else {
+            // Coverage period: kilimo runs a season (6 months), others 30 days
             const startDate = new Date();
             const endDate = new Date();
             if (category === 'kilimo') {
@@ -128,37 +138,36 @@ export async function POST(req: NextRequest) {
               endDate.setDate(endDate.getDate() + 30);
             }
 
-            const txHash = `0x${Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('')}`;
-
-            const { data: policyData, error: policyError } = await supabase
-              .from('policies')
-              .insert({
+            // Trigger the REAL M-Pesa STK push (same helper as the web checkout).
+            // The policy is NOT created here — it is created by the Paystack
+            // webhook (/api/payments/paystack) on charge.success using the
+            // metadata below. This mirrors the working web payment flow.
+            const reference = `BOS-USSD-${Date.now().toString(36).toUpperCase()}`;
+            const stk = await initiateMpesaStkPush({
+              phoneNumber: cleanedPhone,
+              amount: product.premium,
+              reference,
+              metadata: {
                 user_id: userId,
                 policy_type: product.type,
-                premium_amount: product.premium,
+                plan_name: product.name,
                 coverage_amount: product.coverage,
-                status: 'active',
                 start_date: startDate.toISOString(),
                 end_date: endDate.toISOString(),
-                blockchain_tx_hash: txHash,
-                category: category,
-                plan_id: product.type
-              })
-              .select()
-              .single();
+                channel: 'ussd',
+              },
+            });
 
-            if (policyError) {
-              console.error('Policy insert error:', policyError);
-            } else if (policyData) {
-              // Log to blockchain ledger registry
-              await supabase.from('ledger_logs').insert({
-                entity_type: 'policy_issuance',
-                entity_id: policyData.id,
-                tx_hash: txHash,
-                network: 'stellar_soroban',
-                payload: { product: product.type, premium: product.premium }
-              });
+            if (!stk.success) {
+              console.error('[USSD] STK push failed:', stk.message);
+              response.type = 'END';
+              response.message =
+                lang === 'sw'
+                  ? 'Samahani, hatukuweza kutuma ombi la malipo la M-Pesa. Tafadhali jaribu tena.'
+                  : 'Sorry, we could not send the M-Pesa request. Please try again.';
             }
+            // On success the confirm END message already instructs the user to
+            // enter their M-Pesa PIN; the webhook finalises the policy.
           }
         }
       }

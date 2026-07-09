@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY || '';
+import { initiateMpesaStkPush } from '@/lib/paystack';
 
 /**
  * Trigger a Paystack M-Pesa (mobile money) STK push charge.
@@ -12,6 +11,9 @@ const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY || '';
  *   email        – customer email (required by Paystack)
  *   accountReference – policy / order reference
  *   metadata     – { user_id, policy_type } passed through to webhook
+ *
+ * The actual STK-push logic is shared with the USSD flow via
+ * `initiateMpesaStkPush` in src/lib/paystack.ts.
  */
 export async function POST(req: NextRequest) {
   try {
@@ -25,85 +27,33 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Normalise to Paystack Kenya required format: +254XXXXXXXXX
-    // Strip everything except digits first, then prepend +254
-    let digits = phoneNumber.trim().replace(/\D/g, '');   // remove all non-digit chars
-    if (digits.startsWith('254')) {
-      digits = digits;                                     // 254XXXXXXXXX → keep
-    } else if (digits.startsWith('0')) {
-      digits = '254' + digits.slice(1);                   // 07XXXXXXXX → 254XXXXXXXXX
-    } else {
-      digits = '254' + digits;                            // bare number → 254XXXXXXXXX
-    }
-    const normalised = '+' + digits;                      // always prefix with +
-
-    if (digits.length !== 12) {
-      return NextResponse.json(
-        { success: false, message: `Phone number must be 12 digits after country code. Got: ${normalised}` },
-        { status: 400 }
-      );
-    }
-
-    // Paystack KES amounts are in cents (×100)
-    const amountInCents = Math.round(Number(amount) * 100);
-
-    const customerEmail = email || `${digits}@bimaos.co.ke`;
-
-    console.log(`[Paystack M-Pesa] Initiating STK push → ${normalised} | KES ${amount} | Ref: ${accountReference}`);
-
-    const paystackRes = await fetch('https://api.paystack.co/charge', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        email: customerEmail,
-        amount: amountInCents,
-        currency: 'KES',
-        mobile_money: {
-          phone: normalised,   // +254XXXXXXXXX
-          provider: 'mpesa',
-        },
-        reference: accountReference || `BOS-${Date.now()}`,
-        metadata: metadata || {},
-      }),
+    const result = await initiateMpesaStkPush({
+      phoneNumber,
+      amount,
+      email,
+      reference: accountReference || `BOS-${Date.now()}`,
+      metadata: metadata || {},
     });
 
-    const paystackData = await paystackRes.json();
-
-    // Log full response for debugging
-    console.log('[Paystack M-Pesa] Full response:', JSON.stringify(paystackData, null, 2));
-
-    if (!paystackRes.ok || !paystackData.status) {
-      console.error('[Paystack M-Pesa Error]:', paystackData);
+    if (!result.success) {
       return NextResponse.json(
         {
           success: false,
           receiptNumber: null,
           transactionId: null,
-          message: paystackData.message || 'M-Pesa charge initiation failed.',
-          paystackError: paystackData,
+          message: result.message,
+          paystackError: result.error,
         },
         { status: 400 }
       );
     }
 
-    // Paystack M-Pesa returns status: "pay_offline" when STK push is dispatched
-    const reference = paystackData.data?.reference || accountReference;
-    const status = paystackData.data?.status;
-
-    console.log(`[Paystack M-Pesa] STK status: ${status} | Phone: ${normalised} | Reference: ${reference}`);
-
     return NextResponse.json({
       success: true,
-      receiptNumber: reference,
-      transactionId: reference,
-      paystackStatus: status,
-      message:
-        status === 'success'
-          ? `Payment of KES ${amount} completed. Reference: ${reference}`
-          : `M-Pesa STK push sent to ${normalised}. Enter your M-Pesa PIN to complete. Reference: ${reference}`,
+      receiptNumber: result.reference,
+      transactionId: result.reference,
+      paystackStatus: result.status,
+      message: result.message,
     });
   } catch (error) {
     console.error('[Payment Error]:', error);
