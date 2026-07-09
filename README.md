@@ -1,36 +1,125 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+<p align="center">
+  <img src="public/BimaOS_logo_horizontal.png" alt="BimaOS" width="280">
+</p>
+
+# BimaOS — Insurance for Every African
+
+Open insurance infrastructure for Africa. Get covered via USSD in under 3 minutes. AI-powered claims, blockchain trust, M-Pesa payouts.
+
+Built for the Africa's Talking Insurtech Hackathon 2025.
+
+## Core Features
+
+- **USSD & SMS** — Buy insurance and file claims via USSD (no smartphone required)
+- **AI Claims Processing** — Image analysis with confidence scoring, fraud detection
+- **Blockchain Ledger** — Immutable claim/policy records on Stellar Soroban
+- **M-Pesa Payouts** — Instant claim settlements via mobile money
+- **Human-in-the-Loop** — Telegram-based adjuster review for flagged claims
+- **Insurer Dashboard** — Claims management, analytics, USSD simulator
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Framework | Next.js 16 (Turbopack) |
+| Language | TypeScript |
+| Styling | Tailwind CSS v4, shadcn/ui |
+| Database | Supabase (PostgreSQL) |
+| Blockchain | Stellar Soroban (simulated) |
+| AI | Computer vision analysis (simulated) |
+| USSD/SMS | Africa's Talking API |
+| Mobile Money | M-Pesa API |
+| Adjuster | Telegram Bot API |
+| PWA | Service worker + manifest |
 
 ## Getting Started
 
-First, run the development server:
-
 ```bash
+npm install
+cp .env.example .env.local   # add your API keys
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Environment Variables
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```env
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
 
-## Learn More
+# Africa's Talking (optional — simulated fallback)
+AT_API_KEY=
+AT_USERNAME=
+AT_USSD_CODE=*384*XXX#
 
-To learn more about Next.js, take a look at the following resources:
+# Stellar (optional — simulated fallback)
+STELLAR_SECRET_KEY=
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+# M-Pesa (optional — simulated fallback)
+MPESA_CONSUMER_KEY=
+MPESA_CONSUMER_SECRET=
+MPESA_PASSKEY=
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+# Telegram (optional — simulated fallback)
+TELEGRAM_BOT_TOKEN=
+```
 
-## Deploy on Vercel
+All services include simulated fallbacks so the app runs without external APIs.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Project Structure
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
+src/
+├── app/                    # Next.js App Router
+│   ├── api/                # API routes (blockchain, claims, payments, etc.)
+│   ├── auth/               # Authentication pages
+│   ├── claims/             # Claims management
+│   ├── dashboard/          # Insurer B2B portal
+│   ├── products/           # Insurance product catalog
+│   └── verify/             # Telegram adjuster interface
+├── components/             # Reusable UI components
+│   ├── dashboard/          # Dashboard-specific components
+│   ├── landing/            # Landing page sections
+│   ├── shared/             # Shared components (Logo, etc.)
+│   ├── theme/              # Theme provider and toggle
+│   └── ui/                 # shadcn/ui primitives
+├── lib/                    # Utilities and API helpers
+│   ├── ai.ts               # AI claim analysis engine
+│   ├── blockchain.ts       # Stellar ledger integration
+│   ├── payment.ts          # M-Pesa integration
+│   ├── products.ts         # Insurance product definitions
+│   └── ussd.ts             # USSD menu builder
+└── types/                  # TypeScript type definitions
+```
+
+## Build
+
+```bash
+npm run build     # production build
+npm run lint      # lint check
+```
+
+## Routes
+
+| Path | Description |
+|------|-------------|
+| `/` | Landing page |
+| `/auth/login` | Sign in / Sign up (email + password) |
+| `/claims` | File and track claims |
+| `/dashboard` | Insurer B2B portal |
+| `/products` | Insurance product catalog |
+| `/verify` | Telegram adjuster review |
+| `/agents` | Agent portal |
+| `/api/ussd` | USSD webhook handler |
+| `/api/blockchain` | Blockchain ledger API |
+| `/api/claims` | Claims processing API |
+| `/api/payments` | Payment API |
+| `/api/telegram` | Telegram bot webhook |
+| `/api/verify` | Claims verification API |
+| `/api/sms` | SMS notification API |
+
+## License
+
+MIT
