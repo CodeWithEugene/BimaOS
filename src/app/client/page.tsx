@@ -367,14 +367,26 @@ export default function ClientPortalPage() {
         return;
       }
 
-      // STK push was dispatched. Policy will be created by the Paystack webhook
-      // (POST /api/payments/paystack) once the user confirms with their PIN.
-      // Poll Supabase for the new policy (created after this timestamp).
+      // STK push was dispatched. Actively verify the payment against Paystack
+      // via /api/payments/poll — this both confirms the charge AND creates the
+      // policy server-side, so the flow works even if the async webhook is
+      // delayed or not configured. (Webhook remains as a redundant safety net.)
       const ref = payData.receiptNumber || payRef;
       setMpesaRef(ref);
       setShowConfirm(false);
       setAwaitingMpesaConfirm(true);
       setPolicyPurchaseLoading(false);
+
+      // Build the verification URL with all metadata the server needs to mint
+      // the policy the moment Paystack reports the charge as successful.
+      const pollUrl =
+        `/api/payments/poll?ref=${encodeURIComponent(ref)}` +
+        `&user_id=${encodeURIComponent(user.id)}` +
+        `&policy_type=${encodeURIComponent(targetPlan.id)}` +
+        `&plan_name=${encodeURIComponent(targetPlan.name)}` +
+        `&coverage_amount=${encodeURIComponent(targetPlan.coverage)}` +
+        `&start_date=${encodeURIComponent(startDate.toISOString())}` +
+        `&end_date=${encodeURIComponent(endDate.toISOString())}`;
 
       const pollStart = Date.now();
       const pollInterval = setInterval(async () => {
@@ -386,20 +398,31 @@ export default function ClientPortalPage() {
           return;
         }
 
-        const { data: newPolicies } = await supabase
-          .from('policies')
-          .select('id, created_at')
-          .eq('user_id', user.id)
-          .gte('created_at', pollStart - 5000 > 0 ? new Date(pollStart - 5000).toISOString() : new Date().toISOString())
-          .order('created_at', { ascending: false })
-          .limit(1);
+        try {
+          const pollRes = await fetch(pollUrl);
+          const pollData = await pollRes.json();
 
-        if (newPolicies && newPolicies.length > 0) {
-          clearInterval(pollInterval);
-          setAwaitingMpesaConfirm(false);
-          setPolicyRef(`BOS-${newPolicies[0].id.slice(0, 8).toUpperCase()}`);
-          setPurchased(true);
-          await fetchData(user.id);
+          if (pollData.status === 'success') {
+            clearInterval(pollInterval);
+            setAwaitingMpesaConfirm(false);
+            if (pollData.policyId) {
+              setPolicyRef(`BOS-${String(pollData.policyId).slice(0, 8).toUpperCase()}`);
+            }
+            setPurchased(true);
+            await fetchData(user.id);
+            return;
+          }
+
+          if (pollData.status === 'failed') {
+            clearInterval(pollInterval);
+            setAwaitingMpesaConfirm(false);
+            alert('M-Pesa payment was not completed. Please try again. Ref: ' + ref);
+            return;
+          }
+          // status === 'pending' → keep polling until success/failure/timeout
+        } catch (pollErr) {
+          // Transient network error — keep polling until timeout
+          console.error('[M-Pesa Poll] transient error:', pollErr);
         }
       }, 3000);
     } catch (error: any) {
