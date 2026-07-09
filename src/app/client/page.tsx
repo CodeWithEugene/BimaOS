@@ -132,6 +132,8 @@ export default function ClientPortalPage() {
   const [purchased, setPurchased] = useState(false);
   const [policyRef, setPolicyRef] = useState('');
   const [policyPurchaseLoading, setPolicyPurchaseLoading] = useState(false);
+  const [awaitingMpesaConfirm, setAwaitingMpesaConfirm] = useState(false);
+  const [mpesaRef, setMpesaRef] = useState('');
 
   // FILE CLAIM STATE
   const [claimStep, setClaimStep] = useState<'select' | 'describe' | 'upload' | 'processing' | 'result'>('select');
@@ -347,90 +349,59 @@ export default function ClientPortalPage() {
           amount: targetPlan.premium,
           email: user?.email || `${phoneForPayment}@bimaos.co.ke`,
           accountReference: payRef,
-          metadata: { user_id: user.id, policy_type: targetPlan.id },
+          metadata: {
+            user_id:         user.id,
+            policy_type:     targetPlan.id,
+            plan_name:       targetPlan.name,
+            coverage_amount: targetPlan.coverage,
+            start_date:      startDate.toISOString(),
+            end_date:        endDate.toISOString(),
+          },
         }),
       });
       const payData = await payRes.json();
 
       if (!payRes.ok || !payData.success) {
-        // Show the exact Paystack error to the user
         alert(`M-Pesa payment failed: ${payData.message || 'Unknown error. Please try again.'}`);
         setPolicyPurchaseLoading(false);
         return;
       }
 
+      // STK push was dispatched. Policy will be created by the Paystack webhook
+      // (POST /api/payments/paystack) once the user confirms with their PIN.
+      // Poll Supabase for the new policy (created after this timestamp).
+      const ref = payData.receiptNumber || payRef;
+      setMpesaRef(ref);
+      setShowConfirm(false);
+      setAwaitingMpesaConfirm(true);
+      setPolicyPurchaseLoading(false);
 
-      // 2. Insert Policy into local Supabase DB
-      const { data: policyData, error: policyError } = await supabase
-        .from('policies')
-        .insert({
-          user_id: user.id,
-          policy_type: targetPlan.id,
-          premium_amount: targetPlan.premium,
-          coverage_amount: targetPlan.coverage,
-          status: 'active',
-          start_date: startDate.toISOString(),
-          end_date: endDate.toISOString(),
-          blockchain_tx_hash: checkTxHash,
-          category: targetPlan.category,
-          plan_id: targetPlan.id
-        })
-        .select()
-        .single();
-
-      if (policyError) throw policyError;
-
-      // 3. Register transaction to Ethereum Sepolia Ledger or fallback to simulation
-      let finalNetwork = 'ethereum_sepolia';
-      try {
-        const chainRes = await fetch('/api/blockchain', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            entityType: 'policy_issuance',
-            entityId: policyData.id,
-            payload: {
-              product: targetPlan.name,
-              premium: targetPlan.premium,
-              coverage: targetPlan.coverage,
-              custom: !selectedPlan,
-              kraPin: customKraPin || null,
-            }
-          })
-        });
-        const chainData = await chainRes.json();
-        if (chainData.success) {
-          checkTxHash = chainData.txHash;
-          finalNetwork = chainData.network;
-          // Update the policy record in Supabase with the real Ethereum TX Hash!
-          await supabase
-            .from('policies')
-            .update({ blockchain_tx_hash: checkTxHash })
-            .eq('id', policyData.id);
+      const pollStart = Date.now();
+      const pollInterval = setInterval(async () => {
+        // Timeout after 3 minutes (M-Pesa STK expires in ~180s)
+        if (Date.now() - pollStart > 180_000) {
+          clearInterval(pollInterval);
+          setAwaitingMpesaConfirm(false);
+          alert('M-Pesa payment timed out. If you entered your PIN, please contact support with ref: ' + ref);
+          return;
         }
-      } catch (err) {
-        console.error('Error logging to blockchain registry API:', err);
-      }
 
-      // 4. Log transaction to Ledger logs on Supabase
-      await supabase.from('ledger_logs').insert({
-        entity_type: 'policy_issuance',
-        entity_id: policyData.id,
-        tx_hash: checkTxHash,
-        network: finalNetwork,
-        payload: { 
-          product: targetPlan.name, 
-          premium: targetPlan.premium, 
-          custom: !selectedPlan,
-          kraPin: customKraPin || null,
+        const { data: newPolicies } = await supabase
+          .from('policies')
+          .select('id, created_at')
+          .eq('user_id', user.id)
+          .gte('created_at', pollStart - 5000 > 0 ? new Date(pollStart - 5000).toISOString() : new Date().toISOString())
+          .order('created_at', { ascending: false })
+          .limit(1);
+
+        if (newPolicies && newPolicies.length > 0) {
+          clearInterval(pollInterval);
+          setAwaitingMpesaConfirm(false);
+          setPolicyRef(`BOS-${newPolicies[0].id.slice(0, 8).toUpperCase()}`);
+          setPurchased(true);
+          await fetchData(user.id);
         }
-      });
-
-      setPolicyRef(`BOS-${policyData.id.slice(0, 8).toUpperCase()}`);
-      setPurchased(true);
-      
-      // Reload user data
-      await fetchData(user.id);
+      }, 3000);
     } catch (error: any) {
       console.error('Purchase error:', error);
       alert(error.message || 'Payment processing failed.');
@@ -1257,6 +1228,32 @@ export default function ClientPortalPage() {
                       </Button>
                     </div>
                   </div>
+                </Card>
+              )}
+
+              {/* Awaiting M-Pesa PIN Confirmation */}
+              {awaitingMpesaConfirm && (
+                <Card className="p-8 border-emerald-200 dark:border-emerald-900 bg-white dark:bg-zinc-950 text-center max-w-lg mx-auto space-y-5 rounded-2xl">
+                  <div className="flex justify-center">
+                    <div className="h-14 w-14 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 flex items-center justify-center rounded-full">
+                      <Smartphone className="h-7 w-7 text-emerald-600 dark:text-emerald-400" />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <h2 className="text-base font-bold text-zinc-900 dark:text-white">Check Your Phone 📲</h2>
+                    <p className="text-xs text-zinc-500">
+                      An M-Pesa STK push has been sent to <span className="font-semibold text-zinc-700 dark:text-zinc-300">{mpesaPhone}</span>.<br />
+                      Enter your M-Pesa PIN to complete payment.
+                    </p>
+                    <div className="inline-block bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 px-3 py-1.5 text-xs text-zinc-500 font-mono mt-1">
+                      Ref: {mpesaRef}
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-center gap-2 text-xs text-zinc-400">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    Waiting for payment confirmation…
+                  </div>
+                  <p className="text-[10px] text-zinc-400">Your policy will activate automatically once payment is confirmed.</p>
                 </Card>
               )}
 
