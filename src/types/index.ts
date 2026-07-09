@@ -37,7 +37,6 @@ export interface Claim {
   ai_confidence_score: number | null;
   ai_analysis: Record<string, unknown> | null;
   image_urls: string[];
-  telegram_message_id: string | null;
   verified_metadata: Record<string, unknown> | null;
   payout_amount: number | null;
   created_at: string;

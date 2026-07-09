@@ -215,7 +215,6 @@ export async function POST(req: NextRequest) {
             status: 'human_review',
             ai_confidence_score: 50,
             image_urls: [],
-            telegram_message_id: `TG_${Date.now()}`,
             social_verdict: "Social Intelligence Audit: No matches found in local news feeds for this specific event. Manual review recommended. Fraud Risk: Moderate."
           });
         }

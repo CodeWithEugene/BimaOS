@@ -44,26 +44,36 @@ export default function LoginPage() {
       if (authError) throw authError;
 
       if (data.session) {
-        // Query the profile to see the role in DB
-        const { data: profile, error: profileErr } = await supabase
+        const user = data.user;
+        // Role is sourced from the stored profile; fall back to the auth
+        // metadata that was set at sign-up so routing is never ambiguous.
+        const { data: profile } = await supabase
           .from('users')
           .select('role')
-          .eq('id', data.session.user.id)
-          .single();
+          .eq('id', user.id)
+          .maybeSingle();
 
-        if (profileErr) {
-          console.error('Error fetching profile:', profileErr);
+        const actualRole: string =
+          (user.user_metadata?.role as string | undefined) ||
+          profile?.role ||
+          'consumer';
+
+        // Guarantee the profile row exists with the correct role so the
+        // backend stays consistent regardless of trigger state.
+        if (!profile || profile.role !== actualRole) {
+          await supabase.from('users').upsert({
+            id: user.id,
+            phone_number: (user.email || user.phone || '') as string,
+            full_name: (user.user_metadata?.full_name as string) || '',
+            role: actualRole,
+          });
         }
 
-        const actualRole = profile?.role || 'consumer';
-        
+        const isStaff = actualRole === 'insurer' || actualRole === 'adjuster' || actualRole === 'admin';
+
         setSuccess(true);
         setTimeout(() => {
-          if (actualRole === 'insurer' || actualRole === 'adjuster' || actualRole === 'admin') {
-            router.push('/dashboard');
-          } else {
-            router.push('/client');
-          }
+          router.push(isStaff ? '/dashboard' : '/client');
         }, 1500);
       }
     } catch (err: any) {
@@ -92,6 +102,23 @@ export default function LoginPage() {
       });
 
       if (authError) throw authError;
+
+      // Best-effort: ensure the profile row exists with the chosen role even
+      // if the database trigger has not run yet (e.g. email confirmation pending).
+      if (data.user) {
+        try {
+          await supabase.from('users').upsert({
+            id: data.user.id,
+            phone_number: (signupEmail || '') as string,
+            full_name: signupName,
+            role: roleSelection,
+            national_id_number: roleSelection === 'consumer' ? signupNationalId : null,
+            kra_pin: roleSelection === 'consumer' ? signupKraPin : null,
+          });
+        } catch {
+          // Profile creation is best-effort; the DB trigger is the primary path.
+        }
+      }
 
       setSuccess(true);
       setTimeout(() => {

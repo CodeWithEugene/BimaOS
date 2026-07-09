@@ -1,11 +1,33 @@
+import { redirect } from 'next/navigation';
+import { createClient } from '@/lib/supabase/server';
 import { Sidebar } from '@/components/dashboard/Sidebar';
 import { Logo } from '@/components/shared/Logo';
 
-export default function DashboardLayout({
+const STAFF_ROLES = ['insurer', 'adjuster', 'admin'];
+
+export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) redirect('/auth/login');
+
+  const { data: profile } = await supabase
+    .from('users')
+    .select('role')
+    .eq('id', user.id)
+    .maybeSingle();
+
+  const role =
+    (user.user_metadata?.role as string | undefined) ||
+    profile?.role ||
+    'consumer';
+
+  if (!STAFF_ROLES.includes(role)) redirect('/client');
+
   return (
     <div className="flex min-h-screen">
       <Sidebar />

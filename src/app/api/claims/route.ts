@@ -74,14 +74,12 @@ export async function POST(req: NextRequest) {
     const claimId = `CLM${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).substring(2, 5).toUpperCase()}`;
 
     let status = 'pending';
-    let telegramMessageId = null;
 
     // Fraud check & document checks
     if (analysis.confidenceScore >= 80 && !analysis.isFraudSuspected) {
       status = 'approved';
     } else {
       status = 'human_review';
-      telegramMessageId = `TG_${Date.now()}`;
     }
 
     const payoutAmount = analysis.analysis.damageSeverity > 0.7 ? 45000 :
@@ -99,7 +97,6 @@ export async function POST(req: NextRequest) {
         status: status,
         ai_confidence_score: analysis.confidenceScore,
         image_urls: imageUrls || [],
-        telegram_message_id: telegramMessageId,
         payout_amount: status === 'approved' ? payoutAmount : null,
         national_id_url: nationalIdUrl || null,
         kra_certificate_url: kraCertificateUrl || null,
@@ -129,7 +126,6 @@ export async function POST(req: NextRequest) {
       aiConfidenceScore: analysis.confidenceScore,
       aiAnalysis: analysis,
       payoutAmount: status === 'approved' ? payoutAmount : null,
-      telegramMessageId,
       blockchainTxHash: txHash,
       socialVerdict,
       message: status === 'approved'

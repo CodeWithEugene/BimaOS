@@ -14,7 +14,6 @@ Built for the Africa's Talking Insurtech Hackathon 2025.
 - **AI Claims Processing** — Image analysis with confidence scoring, fraud detection
 - **Blockchain Ledger** — Immutable claim/policy records on Ethereum Sepolia Smart Contract
 - **M-Pesa Payouts** — Instant claim settlements via mobile money
-- **Human-in-the-Loop** — Telegram-based adjuster review for flagged claims
 - **Insurer Dashboard** — Claims management, analytics, USSD simulator
 
 ## Tech Stack
@@ -29,7 +28,6 @@ Built for the Africa's Talking Insurtech Hackathon 2025.
 | AI | Computer vision analysis (simulated) |
 | USSD/SMS | Africa's Talking API |
 | Mobile Money | M-Pesa API |
-| Adjuster | Telegram Bot API |
 | PWA | Service worker + manifest |
 
 ## Getting Started
@@ -69,9 +67,6 @@ OPERATOR_PRIVATE_KEY=
 MPESA_CONSUMER_KEY=
 MPESA_CONSUMER_SECRET=
 MPESA_PASSKEY=
-
-# Telegram (optional — simulated fallback)
-TELEGRAM_BOT_TOKEN=
 ```
 
 All services include simulated fallbacks so the app runs without external APIs.
@@ -86,7 +81,6 @@ src/
 │   ├── claims/             # Claims management
 │   ├── dashboard/          # Insurer B2B portal
 │   ├── products/           # Insurance product catalog
-│   └── verify/             # Telegram adjuster interface
 ├── components/             # Reusable UI components
 │   ├── dashboard/          # Dashboard-specific components
 │   ├── landing/            # Landing page sections
@@ -118,15 +112,13 @@ npm run lint      # lint check
 | `/claims` | File and track claims |
 | `/dashboard` | Insurer B2B portal |
 | `/products` | Insurance product catalog |
-| `/verify` | Telegram adjuster review |
 | `/agents` | Agent portal |
 | `/api/ussd` | USSD webhook handler |
 | `/api/blockchain` | Blockchain ledger API |
 | `/api/claims` | Claims processing API |
 | `/api/payments` | Payment API |
-| `/api/telegram` | Telegram bot webhook |
-| `/api/verify` | Claims verification API |
 | `/api/sms` | SMS notification API |
+| `/api/verify` | Claims verification API |
 | `/api/payments/paystack` | Paystack payment webhook handler |
 
 ## License

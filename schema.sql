@@ -15,6 +15,8 @@ CREATE TABLE public.users (
     phone_number VARCHAR(100) UNIQUE NOT NULL,
     full_name VARCHAR(100),
     role VARCHAR(20) DEFAULT 'consumer', -- 'consumer', 'agent', 'adjuster', 'admin', 'insurer'
+    national_id_number VARCHAR(50),
+    kra_pin VARCHAR(50),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
 );
 
@@ -41,7 +43,6 @@ CREATE TABLE public.claims (
     status VARCHAR(20) DEFAULT 'pending', -- 'pending', 'ai_review', 'human_review', 'approved', 'settled', 'rejected'
     ai_confidence_score NUMERIC(5, 2),
     image_urls TEXT[], -- Array of Supabase Storage bucket URLs
-    telegram_message_id VARCHAR(100),
     payout_amount NUMERIC(10, 2),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
