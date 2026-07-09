@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { createClient } from '@/lib/supabase/client';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import { Logo } from '@/components/shared/Logo';
 import {
@@ -31,6 +32,13 @@ const navItems = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+  const supabase = createClient();
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.push('/auth/login');
+  };
 
   return (
     <aside className="hidden lg:flex flex-col w-64 border-r border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950">
@@ -72,7 +80,11 @@ export function Sidebar() {
             <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate">Insurer Admin</p>
             <p className="text-xs text-zinc-500 dark:text-zinc-400 truncate">admin@bimaos.app</p>
           </div>
-          <button className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200">
+          <button
+            onClick={handleLogout}
+            aria-label="Log out"
+            className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
+          >
             <LogOut className="h-4 w-4" />
           </button>
         </div>
