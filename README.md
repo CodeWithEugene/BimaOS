@@ -112,6 +112,8 @@ npm run lint      # lint check
 | `/claims` | File and track claims |
 | `/dashboard` | Insurer B2B portal |
 | `/products` | Insurance product catalog |
+| `/terms` | Terms & Conditions |
+| `/privacy` | Privacy Policy |
 | `/agents` | Agent portal |
 | `/api/ussd` | USSD webhook handler |
 | `/api/blockchain` | Blockchain ledger API |

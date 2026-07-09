@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client';
 import { Shield, Mail, Lock, ArrowRight, Smartphone, TrendingUp, AlertCircle, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import Image from 'next/image';
+import Link from 'next/link';
 
 type Tab = 'signin' | 'signup';
 type UserRole = 'consumer' | 'insurer';
@@ -403,9 +404,9 @@ export default function LoginPage() {
                   />
                   <span className="text-xs text-zinc-500 dark:text-zinc-400">
                     I agree to the{' '}
-                    <span className="text-zinc-900 dark:text-zinc-100 underline">Terms</span>
+                    <Link href="/terms" className="text-zinc-900 dark:text-zinc-100 underline hover:opacity-70">Terms</Link>
                     {' '}and{' '}
-                    <span className="text-zinc-900 dark:text-zinc-100 underline">Privacy Policy</span>
+                    <Link href="/privacy" className="text-zinc-900 dark:text-zinc-100 underline hover:opacity-70">Privacy Policy</Link>
                   </span>
                 </label>
                 <button
