@@ -329,35 +329,36 @@ export default function ClientPortalPage() {
 
       let checkTxHash = `0x${Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('')}`;
 
+
       // 1. Collect M-Pesa premium payment via Paystack STK Push
-      const phoneForPayment = mpesaPhone || user?.phone || '';
-      if (phoneForPayment) {
-        try {
-          const payRef = `BOS-PAY-${Date.now().toString(36).toUpperCase()}`;
-          const payRes = await fetch('/api/payments', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              phoneNumber: phoneForPayment,
-              amount: targetPlan.premium,
-              email: user?.email || `${phoneForPayment}@bimaos.co.ke`,
-              accountReference: payRef,
-              metadata: {
-                user_id: user.id,
-                policy_type: targetPlan.id,
-              },
-            }),
-          });
-          const payData = await payRes.json();
-          console.log('[M-Pesa STK Push]', payData.message);
-          // Reference returned; blockchain ledger will get its own tx hash below
-        } catch (payErr) {
-          console.error('[M-Pesa charge error]', payErr);
-          // Non-blocking: still create the policy record and blockchain log
-        }
-      } else {
-        console.warn('[M-Pesa] No phone number available — STK push skipped.');
+      const phoneForPayment = mpesaPhone.trim() || user?.phone || '';
+      if (!phoneForPayment) {
+        alert('Please enter your M-Pesa phone number to continue.');
+        setPolicyPurchaseLoading(false);
+        return;
       }
+
+      const payRef = `BOS-PAY-${Date.now().toString(36).toUpperCase()}`;
+      const payRes = await fetch('/api/payments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          phoneNumber: phoneForPayment,
+          amount: targetPlan.premium,
+          email: user?.email || `${phoneForPayment}@bimaos.co.ke`,
+          accountReference: payRef,
+          metadata: { user_id: user.id, policy_type: targetPlan.id },
+        }),
+      });
+      const payData = await payRes.json();
+
+      if (!payRes.ok || !payData.success) {
+        // Show the exact Paystack error to the user
+        alert(`M-Pesa payment failed: ${payData.message || 'Unknown error. Please try again.'}`);
+        setPolicyPurchaseLoading(false);
+        return;
+      }
+
 
       // 2. Insert Policy into local Supabase DB
       const { data: policyData, error: policyError } = await supabase

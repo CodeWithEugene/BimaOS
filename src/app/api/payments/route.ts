@@ -25,12 +25,15 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Normalise phone: Paystack M-Pesa expects 07xxxxxxxx or 254xxxxxxxx
-    const normalised = phoneNumber.startsWith('0')
-      ? phoneNumber
-      : phoneNumber.startsWith('+254')
-      ? '0' + phoneNumber.slice(4)
-      : phoneNumber;
+    // Normalise to Paystack Kenya format: 254XXXXXXXXX (no leading + or 0)
+    let normalised = phoneNumber.trim().replace(/\s+/g, '');
+    if (normalised.startsWith('+254')) {
+      normalised = normalised.slice(1);           // +254... → 254...
+    } else if (normalised.startsWith('0')) {
+      normalised = '254' + normalised.slice(1);   // 07... → 2547...
+    } else if (!normalised.startsWith('254')) {
+      normalised = '254' + normalised;            // bare number → 254...
+    }
 
     // Paystack amounts are in the smallest currency unit (kobo/cents).
     // For KES, Paystack uses integer KES (not sub-units), so multiply × 100.
@@ -61,6 +64,9 @@ export async function POST(req: NextRequest) {
 
     const paystackData = await paystackRes.json();
 
+    // Log full response for debugging
+    console.log('[Paystack M-Pesa] Full response:', JSON.stringify(paystackData, null, 2));
+
     if (!paystackRes.ok || !paystackData.status) {
       console.error('[Paystack M-Pesa Error]:', paystackData);
       return NextResponse.json(
@@ -69,6 +75,7 @@ export async function POST(req: NextRequest) {
           receiptNumber: null,
           transactionId: null,
           message: paystackData.message || 'M-Pesa charge initiation failed.',
+          paystackError: paystackData,
         },
         { status: 400 }
       );
@@ -79,7 +86,7 @@ export async function POST(req: NextRequest) {
     const reference = paystackData.data?.reference || accountReference;
     const status = paystackData.data?.status;
 
-    console.log(`[Paystack M-Pesa] Response status: ${status} | Reference: ${reference}`);
+    console.log(`[Paystack M-Pesa] STK status: ${status} | Phone: ${normalised} | Reference: ${reference}`);
 
     return NextResponse.json({
       success: true,
